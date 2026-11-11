@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISAK 35: Modul Interaktif Penyajian Laporan Keuangan Entitas Nonlaba</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom Chart Container Styles for strict sizing */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 380px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Chosen Palette: Slate & Warm Amber Executive Financial Palette -->
+    <!-- Application Structure Plan: Application is structured into 6 primary interactive modules: (1) Executive Summary & Core Principles of ISAK 35, (2) Interactive Balance Sheet (Laporan Posisi Keuangan) comparing Format A & Format B with live financial metrics, (3) Statement of Comprehensive Income (Laporan Penghasilan Komprehensif) with single-column vs columnar matrix views, (4) Statement of Changes in Net Assets with interactive restriction-release animation flow, (5) Cash Flow Statement Direct vs Indirect toggle, and (6) Notes to Financial Statements (CALK A-E) featuring interactive breakdown tables, functional expense matrix (Catatan E), and an Endowment Spending Policy Simulator (Catatan D). This non-linear, modular architecture allows financial managers, auditors, and donors to intuitively grasp the nuances of non-profit accounting regulations. -->
+    <!-- Visualization & Content Choices: 
+       - Balance Sheet Format Comparison -> Interactive Side-by-Side & Toggle View -> HTML/Tailwind dynamic card switching -> Clear visual contrast between OCI separation (Format A) and merged presentation (Format B).
+       - Net Asset Restriction Distribution -> Donut Chart -> Chart.js -> Illustrating proportions of Program A/B/C, Time-restricted, Endowment, and Permanent assets (Catatan B).
+       - Functional Expense Allocation -> Stacked Horizontal Bar Chart & Interactive Matrix -> Chart.js + HTML Grid -> Showing distribution across Program A, B, C, Management & General, and Fundraising (Catatan E).
+       - Endowment Portfolio Evolution -> Multi-bar Chart & Interactive Penarikan Y% Simulator -> Chart.js + JS Logic -> Demonstrating donor-restricted (Kelompok A) vs board-designated (Kelompok B) growth.
+       - Release of Restrictions Flow -> Animated Interactive Diagram -> HTML/CSS + JS state update -> Clarifying how restricted funds transfer to unrestricted upon condition fulfillment.
+       - Confirming NO SVG elements and NO Mermaid JS used. All visual graphics rely on Canvas (Chart.js) and clean Tailwind HTML/CSS components. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Top Header Navigation Bar -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-amber-500 text-slate-900 font-black text-xl px-2.5 py-1 rounded shadow-inner">ISAK 35</span>
+                    <div>
+                        <h1 class="font-bold text-base sm:text-lg leading-tight">Penyajian Laporan Keuangan Entitas Nonlaba</h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Panduan Interaktif & Analisis Halaman 20–32 (DE ISAK 35 IAI)</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs bg-slate-800 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full font-medium">
+                        Ref: DE ISAK 35 (2018)
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- Module Navigation Tabs -->
+        <div class="bg-slate-800 border-t border-slate-700 overflow-x-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <button onclick="switchTab('ringkasan')" id="tab-ringkasan" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all bg-amber-500 text-slate-950 font-bold shadow">
+                    📌 Ringkasan & Prinsip
+                </button>
+                <button onclick="switchTab('posisi-keuangan')" id="tab-posisi-keuangan" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-slate-700 hover:text-white">
+                    🏛️ Posisi Keuangan (Format A vs B)
+                </button>
+                <button onclick="switchTab('penghasilan-komprehensif')" id="tab-penghasilan-komprehensif" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-slate-700 hover:text-white">
+                    📊 Penghasilan Komprehensif
+                </button>
+                <button onclick="switchTab('perubahan-aset-neto')" id="tab-perubahan-aset-neto" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-slate-700 hover:text-white">
+                    🔄 Perubahan Aset Neto
+                </button>
+                <button onclick="switchTab('arus-kas')" id="tab-arus-kas" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-slate-700 hover:text-white">
+                    💵 Laporan Arus Kas
+                </button>
+                <button onclick="switchTab('calk')" id="tab-calk" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-slate-700 hover:text-white">
+                    📝 Catatan (CALK A–E)
+                </button>
+                <button onclick="switchTab('simulator')" id="tab-simulator" class="nav-tab px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-slate-700 hover:text-white">
+                    🧮 Simulator Dana Abadi
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= SECTION 1: RINGKASAN & PRINSIP UTAMA ================= -->
+        <section id="sec-ringkasan" class="tab-content space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2 border-b pb-2 border-slate-100">
+                    Kerangka Dasar Penyajian Laporan Keuangan Entitas Nonlaba (ISAK 35)
+                </h2>
+                <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                    Interpretasi Standar Akuntansi Keuangan 35 (ISAK 35) memberikan pedoman penyesuaian bagi entitas berorientasi nonlaba dalam menerapkan PSAK 1 (Penyajian Laporan Keuangan). Bagian riset halaman 20 sampai 32 menyajikan contoh ilustratif komprehensif mencakup 4 laporan keuangan utama beserta Catatan atas Laporan Keuangan (CALK). Fokus utamanya adalah pemisahan aset neto berdasarkan **keberadaan pembatasan (with restrictions)** atau **ketiadaan pembatasan (without restrictions)** oleh penderma/pemberi sumber daya.
+                </p>
+            </div>
+
+            <!-- Key Features Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="text-3xl mb-2">⚖️</div>
+                    <h3 class="font-bold text-slate-900 text-lg mb-1">Dualitas Format Penyajian</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        ISAK 35 memberikan fleksibilitas pilihan format penyajian untuk Laporan Posisi Keuangan (Format A & B) dan Laporan Penghasilan Komprehensif (Format A & B) sesuai dengan tingkat detail yang ingin disajikan entitas.
+                    </p>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="text-3xl mb-2">🔄</div>
+                    <h3 class="font-bold text-slate-900 text-lg mb-1">Mekanisme Reklasifikasi</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Seluruh beban wajib dilaporkan pada kelas **Tanpa Pembatasan**. Ketika syarat penderma terpenuhi, dana berpindah dari kelas **Dengan Pembatasan** ke **Tanpa Pembatasan** melalui mekanisme pembebasan aset neto (Catatan C).
+                    </p>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="text-3xl mb-2">💎</div>
+                    <h3 class="font-bold text-slate-900 text-lg mb-1">Akuntabilitas Dana Abadi</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Pengelolaan dana abadi (*endowment*) dan investasi diatur secara khusus (Catatan D), memisahkan hibah terikat donor (Kelompok A) dan alokasi internal badan perwalian (Kelompok B) serta kebijakan penarikan *Y%*.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conceptual Diagram Card -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
+                    <span>💡</span> Alur Arus Sumber Daya & Akuntansi Beban Menurut ISAK 35
+                </h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                    <div class="space-y-4">
+                        <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <h4 class="font-bold text-amber-900 text-sm">1. Penerimaan Sumbangan / Wakaf</h4>
+                            <p class="text-xs text-amber-800 mt-1">
+                                Dibagi langsung saat penerimaan: <strong>Tanpa Pembatasan</strong> (operasional bebas) atau <strong>Dengan Pembatasan</strong> (dibatasi tujuan program, periode waktu, atau dana abadi).
+                            </p>
+                        </div>
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="font-bold text-blue-900 text-sm">2. Pembebasan Pembatasan (Release of Restrictions)</h4>
+                            <p class="text-xs text-blue-800 mt-1">
+                                Saat syarat program terpenuhi atau waktu terlampaui, aset neto dibebaskan dari kelas *Dengan Pembatasan* dan ditambahkan ke kelas *Tanpa Pembatasan*.
+                            </p>
+                        </div>
+                        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <h4 class="font-bold text-emerald-900 text-sm">3. Pengakuan Beban Operasional</h4>
+                            <p class="text-xs text-emerald-800 mt-1">
+                                Beban program, manajemen, dan pendanaan diakui seluruhnya di kelas *Tanpa Pembatasan* untuk mencerminkan biaya sebenarnya dalam menghasilkan layanan.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Chart Container for Net Asset Distribution Concept -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                        <h4 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">Visualisasi Contoh Komposisi Aset Neto (Catatan B)</h4>
+                        <div class="chart-container">
+                            <canvas id="chartConceptNetAssets"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 2: LAPORAN POSISI KEUANGAN ================= -->
+        <section id="sec-posisi-keuangan" class="tab-content space-y-6 hidden">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-slate-100">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Laporan Posisi Keuangan (Halaman 20–22)</h2>
+                        <p class="text-slate-600 text-sm mt-1">
+                            Membandingkan dua format opsi penyajian ekuitas/aset neto berdasarkan penyajian pos Penghasilan Komprehensif Lain (OCI).
+                        </p>
+                    </div>
+                    <!-- Format Switcher Buttons -->
+                    <div class="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 self-start md:self-auto">
+                        <button onclick="setBalanceSheetFormat('A')" id="btn-bs-format-a" class="px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950">
+                            Format A (OCI Terpisah)
+                        </button>
+                        <button onclick="setBalanceSheetFormat('B')" id="btn-bs-format-b" class="px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900">
+                            Format B (OCI Digabung)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explanation Banner -->
+                <div id="bs-format-explanation" class="mt-4 p-4 rounded-lg text-xs leading-relaxed transition-all">
+                    <!-- Dynamic Text via JS -->
+                </div>
+            </div>
+
+            <!-- Financial Table Component -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+                        <span>🏛️</span> ENTITAS XYZ - Laporan Posisi Keuangan per 31 Desember (dalam Jutaan Rupiah)
+                    </h3>
+                    <span id="bs-format-badge" class="bg-amber-400 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded">FORMAT A</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 font-bold text-slate-700 uppercase">
+                                <th class="p-3">Pos Laporan Keuangan</th>
+                                <th class="p-3 text-right w-32">20X2 (Rp)</th>
+                                <th class="p-3 text-right w-32">20X1 (Rp)</th>
+                                <th class="p-3 w-48 hidden md:table-cell">Catatan Acuan / Penjelasan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-800">
+                            <!-- ASET LANCIAR -->
+                            <tr class="bg-slate-50 font-bold text-slate-900">
+                                <td colspan="4" class="p-2 pl-3">ASET LANCIAR</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Kas dan setara kas</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Likuiditas harian entitas</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Piutang bunga</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Hak atas hasil investasi</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Investasi jangka pendek</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Penempatan kelebihan kas (Catatan D)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Aset lancar lain</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Perlengkapan & uang muka</td>
+                            </tr>
+                            <tr class="font-bold bg-amber-50/50">
+                                <td class="p-2.5 pl-3">Total Aset Lancar</td>
+                                <td class="p-2.5 text-right font-mono text-amber-900">XXXX</td>
+                                <td class="p-2.5 text-right font-mono text-amber-900">XXXX</td>
+                                <td class="p-2.5 hidden md:table-cell"></td>
+                            </tr>
+
+                            <!-- ASET TIDAK LANCIAR -->
+                            <tr class="bg-slate-50 font-bold text-slate-900">
+                                <td colspan="4" class="p-2 pl-3">ASET TIDAK LANCIAR</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Properti investasi</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Properti untuk sewa/apresiasi nilai</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Investasi jangka panjang</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Kelompok A & B (Catatan D)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Aset tetap</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Tanah, bangunan, peralatan</td>
+                            </tr>
+                            <tr class="font-bold bg-amber-50/50">
+                                <td class="p-2.5 pl-3">Total Aset Tidak Lancar</td>
+                                <td class="p-2.5 text-right font-mono text-amber-900">XXXX</td>
+                                <td class="p-2.5 text-right font-mono text-amber-900">XXXX</td>
+                                <td class="p-2.5 hidden md:table-cell"></td>
+                            </tr>
+                            <tr class="font-black bg-slate-200 text-slate-900 text-sm">
+                                <td class="p-3">TOTAL ASET</td>
+                                <td class="p-3 text-right font-mono">XXXX</td>
+                                <td class="p-3 text-right font-mono">XXXX</td>
+                                <td class="p-3 hidden md:table-cell">Aset Lancar + Tidak Lancar</td>
+                            </tr>
+
+                            <!-- LIABILITAS -->
+                            <tr class="bg-slate-50 font-bold text-slate-900">
+                                <td colspan="4" class="p-2 pl-3">LIABILITAS JANGKA PENDEK</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Pendapatan diterima di muka</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Kewajiban layanan mendatang</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Utang jangka pendek</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Utang usaha & operasional</td>
+                            </tr>
+                            <tr class="font-bold bg-slate-100">
+                                <td class="p-2.5 pl-3">Total Liabilitas Jangka Pendek</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 hidden md:table-cell"></td>
+                            </tr>
+                            <tr class="bg-slate-50 font-bold text-slate-900">
+                                <td colspan="4" class="p-2 pl-3">LIABILITAS JANGKA PANJANG</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Utang jangka panjang</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Pinjaman jangka panjang</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 pl-6">Liabilitas imbalan kerja</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Kewajiban pesangon & pensiun</td>
+                            </tr>
+                            <tr class="font-bold bg-slate-100">
+                                <td class="p-2.5 pl-3">Total Liabilitas Jangka Panjang</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 hidden md:table-cell"></td>
+                            </tr>
+                            <tr class="font-bold bg-red-50 text-red-950">
+                                <td class="p-2.5 pl-3">TOTAL LIABILITAS</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 hidden md:table-cell">Total Jangka Pendek + Panjang</td>
+                            </tr>
+
+                            <!-- ASET NETO DYNAMIC ROWS -->
+                            <tr class="bg-amber-100 font-bold text-amber-950">
+                                <td colspan="4" class="p-2 pl-3 uppercase tracking-wider">ASET NETO</td>
+                            </tr>
+                            <tr id="row-bs-unrestricted-header" class="font-semibold text-slate-700">
+                                <td colspan="4" class="p-2 pl-6 bg-slate-50">Tanpa pembatasan (without restrictions) dari pemberi sumber daya</td>
+                            </tr>
+                            <tr id="row-bs-surplus">
+                                <td class="p-2.5 pl-10">Surplus akumulasian</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Akumulasi surplus operasional murni</td>
+                            </tr>
+                            <tr id="row-bs-oci" class="bg-amber-50/70 border-l-4 border-amber-500">
+                                <td class="p-2.5 pl-10 font-medium text-amber-900">Penghasilan komprehensif lain (OCI)*</td>
+                                <td class="p-2.5 text-right font-mono text-amber-900 font-bold">XXXX</td>
+                                <td class="p-2.5 text-right font-mono text-amber-900 font-bold">XXXX</td>
+                                <td class="p-2.5 text-xs text-amber-800 hidden md:table-cell font-semibold">Disajikan tersendiri di Format A</td>
+                            </tr>
+                            <tr id="row-bs-restricted">
+                                <td class="p-2.5 pl-6 font-semibold">Dengan pembatasan (with restrictions) dari pemberi sumber daya</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs text-slate-500 hidden md:table-cell">Rincian terikat di Catatan B</td>
+                            </tr>
+                            <tr class="font-bold bg-emerald-100 text-emerald-950">
+                                <td class="p-2.5 pl-3">TOTAL ASET NETO</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-xs hidden md:table-cell">Lihat Laporan Perubahan Aset Neto</td>
+                            </tr>
+                            <tr class="font-black bg-slate-900 text-white text-sm">
+                                <td class="p-3">TOTAL LIABILITAS DAN ASET NETO</td>
+                                <td class="p-3 text-right font-mono">XXXX</td>
+                                <td class="p-3 text-right font-mono">XXXX</td>
+                                <td class="p-3 text-xs text-slate-300 hidden md:table-cell">Keseimbangan Neraca (Total Liabilities + Net Assets)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 3: LAPORAN PENGHASILAN KOMPREHENSIF ================= -->
+        <section id="sec-penghasilan-komprehensif" class="tab-content space-y-6 hidden">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-slate-100">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Laporan Penghasilan Komprehensif (Halaman 23–25)</h2>
+                        <p class="text-slate-600 text-sm mt-1">
+                            Format A menggunakan penyajian kolom tunggal komparatif, sedangkan Format B menggunakan matriks kolumnar berdasarkan klasifikasi pembatasan aset neto.
+                        </p>
+                    </div>
+                    <!-- Income Format Switcher -->
+                    <div class="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 self-start md:self-auto">
+                        <button onclick="setIncomeFormat('A')" id="btn-inc-format-a" class="px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950">
+                            Format A (Kolom Tunggal)
+                        </button>
+                        <button onclick="setIncomeFormat('B')" id="btn-inc-format-b" class="px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900">
+                            Format B (Matriks Kolumnar)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="inc-format-explanation" class="mt-4 p-4 rounded-lg text-xs leading-relaxed transition-all">
+                    <!-- Dynamic Text via JS -->
+                </div>
+            </div>
+
+            <!-- Dynamic Views Container -->
+            <div id="view-inc-format-a" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-sm sm:text-base">ENTITAS XYZ - Laporan Penghasilan Komprehensif (Format A: Kolom Tunggal Komparatif)</h3>
+                    <span class="bg-amber-400 text-slate-950 text-xs font-bold px-2 py-0.5 rounded">20X2 vs 20X1</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold text-slate-700 uppercase border-b">
+                                <th class="p-3">Uraian Penghasilan & Beban</th>
+                                <th class="p-3 text-right w-32">20X2 (Rp)</th>
+                                <th class="p-3 text-right w-32">20X1 (Rp)</th>
+                                <th class="p-3 w-40 hidden md:table-cell">Catatan Referensi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- TANPA PEMBATASAN -->
+                            <tr class="bg-amber-100 font-bold text-amber-950">
+                                <td colspan="4" class="p-2.5 pl-3">TANPA PEMBATASAN DARI PEMBERI SUMBER DAYA</td>
+                            </tr>
+                            <tr class="font-semibold text-slate-700 bg-slate-50"><td colspan="4" class="p-2 pl-6">Pendapatan</td></tr>
+                            <tr><td class="p-2 pl-10">Sumbangan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Sumbangan bebas terikat</td></tr>
+                            <tr><td class="p-2 pl-10">Jasa layanan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Pendapatan operasional program</td></tr>
+                            <tr><td class="p-2 pl-10">Penghasilan investasi jangka pendek</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan D</td></tr>
+                            <tr><td class="p-2 pl-10">Penghasilan investasi jangka panjang</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan D</td></tr>
+                            <tr><td class="p-2 pl-10">Lain-lain</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Hasil operasional sampingan</td></tr>
+                            <tr class="font-bold bg-amber-50"><td class="p-2 pl-6">Total Pendapatan Tanpa Pembatasan</td><td class="p-2 text-right font-mono text-amber-900">XXXX</td><td class="p-2 text-right font-mono text-amber-900">XXXX</td><td class="p-2 hidden md:table-cell"></td></tr>
+
+                            <tr class="font-semibold text-slate-700 bg-slate-50"><td colspan="4" class="p-2 pl-6">Beban Operasional</td></tr>
+                            <tr><td class="p-2 pl-10">Gaji dan upah</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan E</td></tr>
+                            <tr><td class="p-2 pl-10">Jasa dan profesional</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan E</td></tr>
+                            <tr><td class="p-2 pl-10">Beban administratif</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan E</td></tr>
+                            <tr><td class="p-2 pl-10">Depresiasi</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan E</td></tr>
+                            <tr><td class="p-2 pl-10">Bunga</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Biaya keuangan</td></tr>
+                            <tr><td class="p-2 pl-10">Kerugian akibat kebakaran</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Kerugian insidental aset bebas</td></tr>
+                            <tr><td class="p-2 pl-10">Lain-lain</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan E</td></tr>
+                            <tr class="font-bold bg-red-50 text-red-900"><td class="p-2 pl-6">Total Beban Tanpa Pembatasan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs hidden md:table-cell">Catatan E</td></tr>
+                            <tr class="font-bold bg-emerald-50 text-emerald-950"><td class="p-2.5 pl-6">Surplus (Defisit) Tanpa Pembatasan</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 hidden md:table-cell"></td></tr>
+
+                            <!-- DENGAN PEMBATASAN -->
+                            <tr class="bg-blue-100 font-bold text-blue-950">
+                                <td colspan="4" class="p-2.5 pl-3">DENGAN PEMBATASAN DARI PEMBERI SUMBER DAYA</td>
+                            </tr>
+                            <tr><td class="p-2 pl-10">Pendapatan Sumbangan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Terikat tujuan/periode</td></tr>
+                            <tr><td class="p-2 pl-10">Penghasilan investasi jangka panjang</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Catatan D</td></tr>
+                            <tr><td class="p-2 pl-10">Kerugian akibat kebakaran (Aset Terikat)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-xs text-slate-500 hidden md:table-cell">Kerugian langsung aset terikat</td></tr>
+                            <tr class="font-bold bg-blue-50 text-blue-950"><td class="p-2.5 pl-6">Surplus (Defisit) Dengan Pembatasan</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 hidden md:table-cell"></td></tr>
+
+                            <!-- REKAPITULASI -->
+                            <tr class="font-bold bg-slate-200 text-slate-900"><td class="p-3 pl-3">SURPLUS (DEFISIT) PERIODE BERJALAN</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 hidden md:table-cell"></td></tr>
+                            <tr class="font-bold bg-amber-200 text-amber-950"><td class="p-3 pl-3">PENGHASILAN KOMPREHENSIF LAIN (OCI)</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 text-xs hidden md:table-cell">Keuntungan/kerugian belum terrealisasi</td></tr>
+                            <tr class="font-black bg-slate-900 text-white text-sm"><td class="p-3 pl-3">TOTAL PENGHASILAN KOMPREHENSIF</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 text-xs text-slate-300 hidden md:table-cell">Surplus + OCI</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Format B View -->
+            <div id="view-inc-format-b" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hidden">
+                <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-sm sm:text-base">ENTITAS XYZ - Laporan Penghasilan Komprehensif (Format B: Matriks Kolumnar)</h3>
+                    <span class="bg-amber-400 text-slate-950 text-xs font-bold px-2 py-0.5 rounded">Tahun 20X2</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold text-slate-700 border-b">
+                                <th class="p-3 uppercase">Pos Penghasilan & Beban</th>
+                                <th class="p-3 text-right bg-amber-50 border-x">Tanpa Pembatasan (Rp)</th>
+                                <th class="p-3 text-right bg-blue-50 border-r">Dengan Pembatasan (Rp)</th>
+                                <th class="p-3 text-right bg-emerald-50">Total 20X2 (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-mono">
+                            <tr class="font-sans font-bold bg-slate-50"><td colspan="4" class="p-2 text-slate-900">PENDAPATAN</td></tr>
+                            <tr class="font-sans"><td>Sumbangan</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Jasa layanan</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Penghasilan investasi jangka pendek (Catatan D)</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Penghasilan investasi jangka panjang (Catatan D)</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Lain-lain</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans font-bold bg-slate-100"><td>Total Pendapatan</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2 text-slate-900">XXXX</td></tr>
+
+                            <tr class="font-sans font-bold bg-slate-50"><td colspan="4" class="p-2 text-slate-900">BEBAN (Catatan E)</td></tr>
+                            <tr class="font-sans"><td>Gaji, upah</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Jasa dan profesional</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Administratif</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Depresiasi</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Bunga</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans"><td>Lain-lain</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">—</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans text-red-600"><td>Kerugian akibat kebakaran</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2 font-bold">XXXX</td></tr>
+                            <tr class="font-sans font-bold bg-red-50 text-red-950"><td>Total Beban</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2">XXXX</td></tr>
+
+                            <tr class="font-sans font-bold bg-emerald-50 text-emerald-950"><td>Surplus (Defisit)</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2">XXXX</td></tr>
+                            <tr class="font-sans font-bold bg-amber-50 text-amber-950"><td>PENGHASILAN KOMPREHENSIF LAIN</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2">XXXX</td></tr>
+                            <tr class="font-sans font-black bg-slate-900 text-white"><td>TOTAL PENGHASILAN KOMPREHENSIF</td><td class="text-right p-2 border-x">XXXX</td><td class="text-right p-2 border-r">XXXX</td><td class="text-right p-2">XXXX</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 4: LAPORAN PERUBAHAN ASET NETO ================= -->
+        <section id="sec-perubahan-aset-neto" class="tab-content space-y-6 hidden">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-2xl font-bold text-slate-900 border-b pb-2 border-slate-100">
+                    Laporan Perubahan Aset Neto (Halaman 26)
+                </h2>
+                <p class="text-slate-600 text-sm mt-2 leading-relaxed">
+                    Laporan ini menjadi penghubung utama antara Laporan Penghasilan Komprehensif dan Laporan Posisi Keuangan. Poin sentral laporan ini adalah pos **Aset neto yang dibebaskan dari pembatasan (Catatan C)** yang mereklasifikasi nilai secara simetris dari kelas terikat ke kelas bebas.
+                </p>
+            </div>
+
+            <!-- Dynamic Interactive Reklasifikasi Visualizer -->
+            <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg border border-slate-800 space-y-4">
+                <h3 class="font-bold text-amber-400 text-base flex items-center gap-2">
+                    <span>⚡</span> Simulator Visual Reklasifikasi Pembebasan Pembatasan (Catatan C)
+                </h3>
+                <p class="text-xs text-slate-300">
+                    Klik tombol simulasi untuk melihat bagaimana transaksi pemenuhan syarat program memindahkan aset neto secara otomatis tanpa mengubah total aset neto keseluruhan.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <!-- Box 1: Restricted -->
+                    <div class="p-4 bg-slate-800 rounded-lg border border-blue-500/40 relative">
+                        <span class="text-xs font-bold text-blue-400 uppercase tracking-wider block mb-1">Aset Neto Dengan Pembatasan</span>
+                        <div id="sim-restricted-val" class="text-2xl font-mono font-bold text-white">Rp 1.500 Juta</div>
+                        <p class="text-xs text-slate-400 mt-2">Dana terikat program A, B, C & Waktu</p>
+                    </div>
+
+                    <!-- Box 2: Unrestricted -->
+                    <div class="p-4 bg-slate-800 rounded-lg border border-amber-500/40 relative">
+                        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block mb-1">Aset Neto Tanpa Pembatasan</span>
+                        <div id="sim-unrestricted-val" class="text-2xl font-mono font-bold text-white">Rp 3.200 Juta</div>
+                        <p class="text-xs text-slate-400 mt-2">Dana siap digunakan untuk beban operasional</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-800">
+                    <div class="text-xs text-slate-300">
+                        Status Pembebasan: <span id="sim-status-text" class="font-bold text-amber-300">Belum Dieksekusi</span>
+                    </div>
+                    <button onclick="triggerReklasifikasiSim()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition shadow">
+                        Simulasikan Pembebasan Rp 400 Juta (Catatan C)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Financial Table -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-900 text-white font-bold text-sm sm:text-base">
+                    ENTITAS XYZ - Laporan Perubahan Aset Neto (untuk tahun yang berakhir 31 Desember 20X2)
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold text-slate-700 uppercase border-b">
+                                <th class="p-3">Rincian Perubahan Aset Neto</th>
+                                <th class="p-3 text-right w-36">20X2 (Rp)</th>
+                                <th class="p-3 text-right w-36">20X1 (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- UNRESTRICTED SECTION -->
+                            <tr class="bg-amber-100 font-bold text-amber-950">
+                                <td colspan="3" class="p-2.5 pl-3">ASET NETO TANPA PEMBATASAN DARI PEMBERI SUMBER DAYA</td>
+                            </tr>
+                            <tr><td class="p-2.5 pl-6">Saldo awal</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-6">Surplus tahun berjalan</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="bg-emerald-50 text-emerald-950 font-bold">
+                                <td class="p-2.5 pl-6">Aset neto yang dibebaskan dari pembatasan (Catatan C)</td>
+                                <td class="p-2.5 text-right font-mono">+XXXX</td>
+                                <td class="p-2.5 text-right font-mono">+XXXX</td>
+                            </tr>
+                            <tr class="font-bold bg-slate-100"><td class="p-2.5 pl-6">Saldo akhir akumulasi surplus</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+
+                            <!-- OCI SUB-SECTION -->
+                            <tr class="font-semibold text-slate-700 bg-slate-50"><td colspan="3" class="p-2 pl-6">Penghasilan Komprehensif Lain (OCI)</td></tr>
+                            <tr><td class="p-2.5 pl-10">Saldo awal</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-10">Penghasilan komprehensif tahun berjalan***</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="font-bold bg-slate-100"><td class="p-2.5 pl-6">Saldo akhir OCI</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="font-bold bg-amber-50 text-amber-950"><td class="p-2.5 pl-3">Total Aset Neto Tanpa Pembatasan</td><td class="p-2.5 text-right font-mono">XXXX (A)</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+
+                            <!-- RESTRICTED SECTION -->
+                            <tr class="bg-blue-100 font-bold text-blue-950">
+                                <td colspan="3" class="p-2.5 pl-3">ASET NETO DENGAN PEMBATASAN DARI PEMBERI SUMBER DAYA</td>
+                            </tr>
+                            <tr><td class="p-2.5 pl-6">Saldo awal tahun berjalan</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-6">Surplus tahun berjalan</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="bg-red-50 text-red-950 font-bold">
+                                <td class="p-2.5 pl-6">Aset neto yang dibebaskan dari pembatasan (Catatan C)</td>
+                                <td class="p-2.5 text-right font-mono text-red-600">(XXXX)</td>
+                                <td class="p-2.5 text-right font-mono text-red-600">(XXXX)</td>
+                            </tr>
+                            <tr class="font-bold bg-blue-50 text-blue-950"><td class="p-2.5 pl-3">Total Aset Neto Dengan Pembatasan</td><td class="p-2.5 text-right font-mono">XXXX (B)</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+
+                            <!-- TOTAL -->
+                            <tr class="font-black bg-slate-900 text-white text-sm">
+                                <td class="p-3">TOTAL ASET NETO AKHIR PERIODE</td>
+                                <td class="p-3 text-right font-mono">XXXX</td>
+                                <td class="p-3 text-right font-mono">XXXX</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 5: LAPORAN ARUS KAS ================= -->
+        <section id="sec-arus-kas" class="tab-content space-y-6 hidden">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-slate-100">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Laporan Arus Kas (Halaman 27–28)</h2>
+                        <p class="text-slate-600 text-sm mt-1">
+                            ISAK 35 mengizinkan penggunaan **Metode Langsung** maupun **Metode Tidak Langsung** untuk aktivitas operasi. Klasifikasi penerimaan dana abadi terikat dicatat di Aktivitas Pendanaan.
+                        </p>
+                    </div>
+                    <!-- Cash Flow Switcher -->
+                    <div class="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 self-start md:self-auto">
+                        <button onclick="setCashFlowMethod('direct')" id="btn-cf-direct" class="px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950">
+                            Metode Langsung (Direct)
+                        </button>
+                        <button onclick="setCashFlowMethod('indirect')" id="btn-cf-indirect" class="px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900">
+                            Metode Tidak Langsung (Indirect)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cf-explanation" class="mt-4 p-4 rounded-lg text-xs leading-relaxed transition-all">
+                    <!-- Dynamic Text via JS -->
+                </div>
+            </div>
+
+            <!-- Direct Method View -->
+            <div id="view-cf-direct" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-900 text-white font-bold text-sm sm:text-base flex justify-between items-center">
+                    <span>ENTITAS XYZ - Laporan Arus Kas (Metode Langsung)</span>
+                    <span class="bg-emerald-500 text-slate-950 text-xs font-bold px-2 py-0.5 rounded">DIRECT METHOD</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold text-slate-700 uppercase border-b">
+                                <th class="p-3">Aktivitas Arus Kas</th>
+                                <th class="p-3 text-right w-36">20X2 (Rp)</th>
+                                <th class="p-3 text-right w-36">20X1 (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="bg-slate-50 font-bold text-slate-900"><td colspan="3" class="p-2 pl-3">AKTIVITAS OPERASI</td></tr>
+                            <tr><td class="p-2 pl-6">Kas dari sumbangan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Kas dari pendapatan jasa</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Bunga yang diterima</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Penerimaan lain-lain</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Bunga yang dibayarkan</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td></tr>
+                            <tr><td class="p-2 pl-6">Ganti rugi dari asuransi kebakaran</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Kas yang dibayarkan kepada karyawan & pemasok</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td></tr>
+                            <tr class="font-bold bg-amber-50 text-amber-950"><td class="p-2.5 pl-3">Kas Neto dari Aktivitas Operasi</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+
+                            <tr class="bg-slate-50 font-bold text-slate-900"><td colspan="3" class="p-2 pl-3">AKTIVITAS INVESTASI</td></tr>
+                            <tr><td class="p-2 pl-6">Penerimaan dari penjualan investasi</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Pembelian peralatan</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td></tr>
+                            <tr><td class="p-2 pl-6">Pembelian investasi</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td></tr>
+                            <tr class="font-bold bg-amber-50 text-amber-950"><td class="p-2.5 pl-3">Kas Neto yang Digunakan untuk Aktivitas Investasi</td><td class="p-2.5 text-right font-mono">(XXXX)</td><td class="p-2.5 text-right font-mono">(XXXX)</td></tr>
+
+                            <tr class="bg-slate-50 font-bold text-slate-900"><td colspan="3" class="p-2 pl-3">AKTIVITAS PENDANAAN</td></tr>
+                            <tr><td class="p-2 pl-6">Penerimaan dari sumbangan terikat dana abadi (endowment)</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Investasi dalam bangunan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Bunga yang dibatasi untuk reinvestasi</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2 pl-6">Pembayaran liabilitas jangka panjang</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td><td class="p-2 text-right font-mono text-red-600">(XXXX)</td></tr>
+                            <tr class="font-bold bg-amber-50 text-amber-950"><td class="p-2.5 pl-3">Kas Neto dari Aktivitas Pendanaan</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+
+                            <tr class="font-bold bg-slate-200 text-slate-900"><td class="p-2.5 pl-3">KENAIKAN (PENURUNAN) NETO KAS DAN SETARA KAS</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-3 font-semibold">KAS DAN SETARA KAS AWAL PERIODE</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="font-black bg-slate-900 text-white text-sm"><td class="p-3 pl-3">KAS DAN SETARA KAS AKHIR PERIODE</td><td class="p-3 text-right font-mono">XXXX</td><td class="p-3 text-right font-mono">XXXX</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Indirect Method View -->
+            <div id="view-cf-indirect" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hidden">
+                <div class="p-4 bg-slate-900 text-white font-bold text-sm sm:text-base flex justify-between items-center">
+                    <span>ENTITAS XYZ - Laporan Arus Kas (Metode Tidak Langsung)</span>
+                    <span class="bg-blue-400 text-slate-950 text-xs font-bold px-2 py-0.5 rounded">INDIRECT METHOD</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold text-slate-700 uppercase border-b">
+                                <th class="p-3">Rekonsiliasi Surplus menjadi Kas Operasi</th>
+                                <th class="p-3 text-right w-36">20X2 (Rp)</th>
+                                <th class="p-3 text-right w-36">20X1 (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="bg-slate-50 font-bold text-slate-900"><td colspan="3" class="p-2 pl-3">AKTIVITAS OPERASI</td></tr>
+                            <tr class="font-bold bg-amber-50"><td class="p-2 pl-6">Surplus (Defisit) Periode Berjalan</td><td class="p-2 text-right font-mono">XXXX</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            <tr class="font-semibold text-slate-700"><td colspan="3" class="p-2 pl-6">Penyesuaian Pos Non-Kas & Modal Kerja:</td></tr>
+                            <tr><td class="p-2.5 pl-10">Depresiasi (+ non-kas)</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-10">Ganti rugi dari asuransi kebakaran</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-10">Penurunan (kenaikan) piutang bunga</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-10">Penurunan (kenaikan) utang jangka pendek</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr><td class="p-2.5 pl-10">Penurunan (kenaikan) pendapatan diterima di muka</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="font-bold bg-emerald-50 text-emerald-950"><td class="p-2.5 pl-3">Kas Neto dari Aktivitas Operasi</td><td class="p-2.5 text-right font-mono">XXXX</td><td class="p-2.5 text-right font-mono">XXXX</td></tr>
+                            <tr class="text-xs text-slate-500 italic"><td colspan="3" class="p-3 bg-slate-50">Aktivitas Investasi dan Pendanaan pada metode tidak langsung sama persis dengan metode langsung.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 6: CATATAN ATAS LAPORAN KEUANGAN (CALK A-E) ================= -->
+        <section id="sec-calk" class="tab-content space-y-6 hidden">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-2xl font-bold text-slate-900 border-b pb-2 border-slate-100">
+                    Catatan atas Laporan Keuangan (CALK Catatan A–E, Halaman 29–33)
+                </h2>
+                <p class="text-slate-600 text-sm mt-2 leading-relaxed">
+                    CALK menyediakan penjelasan kualitatif dan rincian kuantitatif mendalam mengenai kebijakan hibah/wakaf (Catatan A), struktur pembatasan aset neto (Catatan B), pembebasan pembatasan (Catatan C), portofolio investasi & dana abadi (Catatan D), serta klasifikasi beban menurut fungsi (Catatan E).
+                </p>
+
+                <!-- Sub Navigation Tabs for Notes -->
+                <div class="flex flex-wrap gap-2 mt-4 pt-2 border-t border-slate-100">
+                    <button onclick="switchCalkNote('A')" id="btn-calk-A" class="calk-subtab px-3 py-1.5 rounded text-xs font-bold bg-slate-900 text-white">Catatan A: Kebijakan Hibah</button>
+                    <button onclick="switchCalkNote('B')" id="btn-calk-B" class="calk-subtab px-3 py-1.5 rounded text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Catatan B: Aset Neto Terikat</button>
+                    <button onclick="switchCalkNote('C')" id="btn-calk-C" class="calk-subtab px-3 py-1.5 rounded text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Catatan C: Aset Dibebaskan</button>
+                    <button onclick="switchCalkNote('D')" id="btn-calk-D" class="calk-subtab px-3 py-1.5 rounded text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Catatan D: Investasi & Dana Abadi</button>
+                    <button onclick="switchCalkNote('E')" id="btn-calk-E" class="calk-subtab px-3 py-1.5 rounded text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Catatan E: Beban Fungsional</button>
+                </div>
+            </div>
+
+            <!-- NOTE A CONTENT -->
+            <div id="calk-note-A" class="calk-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-lg border-b pb-2">Catatan A: Kebijakan Pengungkapan Hibah, Wakaf, dan Aset Tetap</h3>
+                <div class="space-y-3 text-slate-700 text-xs sm:text-sm leading-relaxed">
+                    <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                        <h4 class="font-bold text-amber-950 mb-1">1. Perlakuan Hibah & Wakaf Kas / Aset Lain</h4>
+                        <p>
+                            Entitas menyajikan hibah atau wakaf berupa kas atau aset lain sebagai **sumbangan dengan pembatasan** jika diterima dengan persyaratan pembatasan baik untuk penggunaan aset atau atas manfaat ekonomik masa depan. Ketika pembatasan kedaluwarsa (masa berakhir atau tujuan dipenuhi), aset neto digolongkan kembali ke **tanpa pembatasan** di Laporan Perubahan Aset Neto.
+                        </p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-900 mb-1">2. Hibah & Wakaf Tanah, Bangunan, dan Peralatan</h4>
+                        <p>
+                            Sumbangan aset tetap disajikan sebagai **tanpa pembatasan**, *kecuali* jika penderma secara eksplisit menyatakan tujuan pemanfaatan atau jangka waktu penggunaan aset. Jika tidak ada pembatasan waktu eksplisit, pembebasan pembatasan dilaporkan saat aset tetap mulai dimanfaatkan.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTE B CONTENT -->
+            <div id="calk-note-B" class="calk-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
+                <h3 class="font-bold text-slate-900 text-lg border-b pb-2">Catatan B: Rincian Aset Neto Dengan Pembatasan (Halaman 29–30)</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <div class="p-3 bg-slate-50 rounded border">
+                            <span class="font-bold text-slate-900 block">1. Ditujukan untuk Tujuan Terbatas:</span>
+                            <ul class="list-disc pl-5 mt-1 text-slate-600 space-y-0.5">
+                                <li>Program A: Pembelian peralatan, penelitian, seminar & publikasi</li>
+                                <li>Program B: Perbaikan peralatan, seminar & publikasi</li>
+                                <li>Program C: Umum, Bangunan & peralatan, perwalian tahunan</li>
+                            </ul>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded border">
+                            <span class="font-bold text-slate-900 block">2. Ditujukan untuk Periode Tertentu:</span>
+                            <p class="text-slate-600">Dana untuk penggunaan operasional setelah 31 Desember 20X1.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded border">
+                            <span class="font-bold text-slate-900 block">3. Kebijakan Pembelanjaan & Apropriasi:</span>
+                            <p class="text-slate-600">Hasil investasi tahunan pendukung Program A, B, C dan aktivitas lain.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded border">
+                            <span class="font-bold text-slate-900 block">4. Pembatasan Kondisional & Permanen:</span>
+                            <p class="text-slate-600">Polis asuransi kematian penderma & tanah area rekreasi (permanen).</p>
+                        </div>
+                    </div>
+                    <!-- Chart B -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center justify-center">
+                        <h4 class="text-xs font-bold text-slate-700 mb-2 uppercase">Proporsi Kategori Pembatasan Aset Neto</h4>
+                        <div class="chart-container">
+                            <canvas id="chartNoteB"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTE C CONTENT -->
+            <div id="calk-note-C" class="calk-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
+                <h3 class="font-bold text-slate-900 text-lg border-b pb-2">Catatan C: Aset Neto yang Dibebaskan dari Pembatasan (Halaman 31)</h3>
+                <p class="text-xs sm:text-sm text-slate-600">
+                    Menampilkan rincian realisasi pengeluaran dan pemenuhan syarat waktu yang memicu pembebasan pembatasan penderma selama tahun berjalan:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border">
+                            <thead class="bg-slate-100 font-bold border-b">
+                                <tr><th class="p-2">Tujuan Pembatasan yang Dipenuhi</th><th class="p-2 text-right">Nilai (Rp)</th></tr>
+                            </thead>
+                            <tbody class="divide-y font-mono">
+                                <tr><td class="p-2 font-sans">Beban Program A</td><td class="p-2 text-right">XXXX</td></tr>
+                                <tr><td class="p-2 font-sans">Beban Program B</td><td class="p-2 text-right">XXXX</td></tr>
+                                <tr><td class="p-2 font-sans">Beban Program C</td><td class="p-2 text-right">XXXX</td></tr>
+                                <tr><td class="p-2 font-sans">Peralatan dibeli & dimanfaatkan</td><td class="p-2 text-right">XXXX</td></tr>
+                                <tr><td class="p-2 font-sans">Pembebasan jumlah endowment disisihkan</td><td class="p-2 text-right">XXXX</td></tr>
+                                <tr class="font-bold bg-amber-50 font-sans"><td>Total Dibebaskan</td><td class="p-2 text-right font-mono">XXXX</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                        <h4 class="text-xs font-bold text-slate-700 mb-2 uppercase">Visual Rincian Pembebasan Pembatasan</h4>
+                        <div class="chart-container">
+                            <canvas id="chartNoteC"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTE D CONTENT -->
+            <div id="calk-note-D" class="calk-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
+                <h3 class="font-bold text-slate-900 text-lg border-b pb-2">Catatan D: Akuntansi Investasi dan Dana Abadi / Endowment (Halaman 32)</h3>
+                <div class="space-y-4 text-xs sm:text-sm text-slate-700">
+                    <p class="leading-relaxed">
+                        Investasi dicatat pada nilai wajar. Kelebihan kas diinvestasikan pada investasi jangka pendek. Investasi jangka panjang dibagi menjadi dua kelompok utama:
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <h4 class="font-bold text-indigo-950">Kelompok A (Donor-Restricted Endowment)</h4>
+                            <p class="text-xs text-indigo-800 mt-1">Dana abadi terikat penderma di mana nilai pokok aset tidak diwajibkan untuk dinaikkan nilai bersihnya.</p>
+                        </div>
+                        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <h4 class="font-bold text-emerald-950">Kelompok B (Board-Designated Endowment)</h4>
+                            <p class="text-xs text-emerald-800 mt-1">Dana yang ditujukan oleh badan perwalian (internal) untuk investasi jangka panjang entitas.</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <h4 class="font-bold text-amber-950">Aturan Penarikan Kebijakan Pembelanjaan (Spending Policy)</h4>
+                        <p class="text-xs text-amber-900 mt-1">
+                            Sesuai regulasi, entitas menetapkan penarikan sebesar <strong>Y%</strong> dari rata-rata nilai wajar portofolio investasi pada akhir 3 tahun sebelumnya untuk disesuaikan membiayai operasional (Rp XX tahun 20X2).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTE E CONTENT -->
+            <div id="calk-note-E" class="calk-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
+                <h3 class="font-bold text-slate-900 text-lg border-b pb-2">Catatan E: Rincian Beban Menurut Fungsi (Halaman 33)</h3>
+                <p class="text-xs sm:text-sm text-slate-600">
+                    ISAK 35 mewajibkan atau menganjurkan pengungkapan beban berdasarkan klasifikasi fungsional (Program A, B, C vs Beban Pendukung Manajemen & Pendanaan):
+                </p>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border">
+                        <thead class="bg-slate-900 text-white font-bold">
+                            <tr>
+                                <th class="p-2.5">Jenis Beban Alokasi</th>
+                                <th class="p-2.5 text-right bg-slate-800">Program A</th>
+                                <th class="p-2.5 text-right bg-slate-800">Program B</th>
+                                <th class="p-2.5 text-right bg-slate-800">Program C</th>
+                                <th class="p-2.5 text-right bg-indigo-900">Manajemen & Umum</th>
+                                <th class="p-2.5 text-right bg-amber-700">Pendanaan</th>
+                                <th class="p-2.5 text-right bg-slate-950">Total Beban</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y font-mono">
+                            <tr><td class="p-2 font-sans font-semibold">Gaji, upah</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right font-bold">XXXX</td></tr>
+                            <tr><td class="p-2 font-sans font-semibold">Jasa & profesional</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right font-bold">XXXX</td></tr>
+                            <tr><td class="p-2 font-sans font-semibold">Administratif</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right font-bold">XXXX</td></tr>
+                            <tr><td class="p-2 font-sans font-semibold">Depresiasi</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right font-bold">XXXX</td></tr>
+                            <tr><td class="p-2 font-sans font-semibold">Bunga</td><td class="p-2 text-right">—</td><td class="p-2 text-right">—</td><td class="p-2 text-right">—</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">—</td><td class="p-2 text-right font-bold">XXXX</td></tr>
+                            <tr><td class="p-2 font-sans font-semibold">Lain-lain</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right">XXXX</td><td class="p-2 text-right font-bold">XXXX</td></tr>
+                            <tr class="font-bold bg-amber-100 font-sans text-slate-900">
+                                <td class="p-2.5">Total Beban Fungsional</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                                <td class="p-2.5 text-right font-mono">XXXX</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 uppercase">Grafik Alokasi Beban Fungsional (Catatan E)</h4>
+                    <div class="chart-container">
+                        <canvas id="chartNoteE"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 7: SIMULATOR DANA ABADI ================= -->
+        <section id="sec-simulator" class="tab-content space-y-6 hidden">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-2xl font-bold text-slate-900 border-b pb-2 border-slate-100">
+                    Kalkulator & Simulator Penarikan Dana Abadi (Catatan D ISAK 35)
+                </h2>
+                <p class="text-slate-600 text-sm mt-2 leading-relaxed">
+                    Catatan D menyebutkan bahwa entitas nonlaba dapat menarik persentase tertentu (*Y%*) dari rata-rata nilai wajar 3 tahun sebelumnya untuk membiayai operasional tanpa menggerogoti nilai kapital utama dana abadi. Gunakan kalkulator interaktif ini untuk memodelkan dampak inflasi dan imbal hasil investasi.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Inputs Form -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 text-base border-b pb-2">Parameter Dana Abadi</h3>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nilai Rata-rata 3 Tahun (Rp Jutaan)</label>
+                        <input type="number" id="sim-endow-base" value="10000" class="w-full p-2 border border-slate-300 rounded text-sm font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none" oninput="calculateEndowmentSim()">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tingkat Penarikan Y% (Spending Policy)</label>
+                        <input type="range" id="sim-endow-rate" min="1" max="10" step="0.5" value="5" class="w-full accent-amber-500" oninput="calculateEndowmentSim()">
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>1%</span>
+                            <span id="lbl-sim-rate" class="font-bold text-amber-600 text-sm">5%</span>
+                            <span>10%</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Estimasi Imbal Hasil Investasi Bersih (%)</label>
+                        <input type="number" id="sim-endow-return" value="8" class="w-full p-2 border border-slate-300 rounded text-sm font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none" oninput="calculateEndowmentSim()">
+                    </div>
+
+                    <div class="p-3 bg-amber-50 rounded border border-amber-200 text-xs text-amber-900">
+                        <strong>Prinsip ISAK 35:</strong> Penarikan dana abadi diakui sebagai dana yang dibebaskan dari pembatasan untuk mendukung operasional program (Catatan C & D).
+                    </div>
+                </div>
+
+                <!-- Outputs & Calculation -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base border-b pb-2">Hasil Proyeksi Alokasi Operasional</h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
+                            <div class="p-4 bg-slate-50 rounded-lg border text-center">
+                                <span class="text-xs text-slate-500 block mb-1">Dana Penarikan Operasional (Y%)</span>
+                                <span id="res-sim-withdraw" class="text-xl font-bold font-mono text-amber-600">Rp 500 Juta</span>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-lg border text-center">
+                                <span class="text-xs text-slate-500 block mb-1">Pertumbuhan Pokok Investasi</span>
+                                <span id="res-sim-growth" class="text-xl font-bold font-mono text-emerald-600">Rp 800 Juta</span>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-lg border text-center">
+                                <span class="text-xs text-slate-500 block mb-1">Net Rekumulasi Dana Abadi</span>
+                                <span id="res-sim-netbalance" class="text-xl font-bold font-mono text-indigo-600">Rp 10.300 Juta</span>
+                            </div>
+                        </div>
+
+                        <!-- Simulator Chart -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="chart-container">
+                                <canvas id="chartSimEndowment"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 text-xs border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="font-semibold text-slate-300">Modul Interaktif Analisis Draf Eksposur ISAK 35 (Halaman 20–32)</p>
+            <p>Dewan Standar Akuntansi Keuangan - Ikatan Akuntan Indonesia (DSAK IAI)</p>
+            <p class="text-slate-500">Dikembangkan untuk efisiensi riset, akuntabilitas publik, dan pemahaman akuntansi entitas nonlaba.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Global State & Data
+        let currentBSFormat = 'A';
+        let currentIncomeFormat = 'A';
+        let currentCashFlowMethod = 'direct';
+        let currentCalkNote = 'A';
+
+        // Chart Instances Holder
+        let chartInstances = {};
+
+        // DOM Loaded Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            updateBSFormatUI();
+            updateIncomeFormatUI();
+            updateCashFlowMethodUI();
+            calculateEndowmentSim();
+        });
+
+        // Tab Navigation Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('bg-amber-500', 'text-slate-950', 'font-bold', 'shadow');
+                el.classList.add('text-slate-300');
+            });
+
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`tab-${tabId}`);
+            activeNav.classList.remove('text-slate-300');
+            activeNav.classList.add('bg-amber-500', 'text-slate-950', 'font-bold', 'shadow');
+        }
+
+        // CALK Sub-tab Switching
+        function switchCalkNote(noteId) {
+            currentCalkNote = noteId;
+            document.querySelectorAll('.calk-card').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.calk-subtab').forEach(el => {
+                el.classList.remove('bg-slate-900', 'text-white');
+                el.classList.add('bg-slate-100', 'text-slate-700');
+            });
+
+            document.getElementById(`calk-note-${noteId}`).classList.remove('hidden');
+            const activeSub = document.getElementById(`btn-calk-${noteId}`);
+            activeSub.classList.remove('bg-slate-100', 'text-slate-700');
+            activeSub.classList.add('bg-slate-900', 'text-white');
+
+            // Trigger chart update for note if visible
+            if (chartInstances[`chartNote${noteId}`]) {
+                chartInstances[`chartNote${noteId}`].update();
+            }
+        }
+
+        // Balance Sheet Format Switcher
+        function setBalanceSheetFormat(format) {
+            currentBSFormat = format;
+            updateBSFormatUI();
+        }
+
+        function updateBSFormatUI() {
+            const btnA = document.getElementById('btn-bs-format-a');
+            const btnB = document.getElementById('btn-bs-format-b');
+            const badge = document.getElementById('bs-format-badge');
+            const ociRow = document.getElementById('row-bs-oci');
+            const expDiv = document.getElementById('bs-format-explanation');
+
+            if (currentBSFormat === 'A') {
+                btnA.className = "px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950";
+                btnB.className = "px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                badge.textContent = "FORMAT A";
+                ociRow.classList.remove('hidden');
+                expDiv.className = "mt-4 p-4 rounded-lg text-xs leading-relaxed bg-amber-50 border border-amber-200 text-amber-950";
+                expDiv.innerHTML = "<strong>Keunggulan Format A:</strong> Menyajikan pos <em>Penghasilan Komprehensif Lain (OCI)</em> secara <strong>tersendiri</strong> di bawah kelas aset neto terkait. Memberikan transparansi mutlak atas keuntungan/kerugian belum terrealisasi (seperti revaluasi aset/investasi).";
+            } else {
+                btnB.className = "px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950";
+                btnA.className = "px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                badge.textContent = "FORMAT B";
+                ociRow.classList.add('hidden');
+                expDiv.className = "mt-4 p-4 rounded-lg text-xs leading-relaxed bg-blue-50 border border-blue-200 text-blue-950";
+                expDiv.innerHTML = "<strong>Keunggulan Format B:</strong> <strong>Tidak</strong> menyajikan OCI secara tersendiri, melainkan langsung diakumulasikan ke dalam nilai Aset Neto Tanpa Pembatasan. Menghasilkan tampilan neraca yang lebih padat dan simpel.";
+            }
+        }
+
+        // Income Statement Format Switcher
+        function setIncomeFormat(format) {
+            currentIncomeFormat = format;
+            updateIncomeFormatUI();
+        }
+
+        function updateIncomeFormatUI() {
+            const btnA = document.getElementById('btn-inc-format-a');
+            const btnB = document.getElementById('btn-inc-format-b');
+            const viewA = document.getElementById('view-inc-format-a');
+            const viewB = document.getElementById('view-inc-format-b');
+            const expDiv = document.getElementById('inc-format-explanation');
+
+            if (currentIncomeFormat === 'A') {
+                btnA.className = "px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950";
+                btnB.className = "px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                viewA.classList.remove('hidden');
+                viewB.classList.add('hidden');
+                expDiv.className = "mt-4 p-4 rounded-lg text-xs leading-relaxed bg-amber-50 border border-amber-200 text-amber-950";
+                expDiv.innerHTML = "<strong>Format A (Kolom Tunggal):</strong> Menyajikan pendapatan dan beban secara sekuensial vertikal. Format ini sangat mempermudah pembandingan komparatif antar-periode (20X2 vs 20X1).";
+            } else {
+                btnB.className = "px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950";
+                btnA.className = "px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                viewB.classList.remove('hidden');
+                viewA.classList.add('hidden');
+                expDiv.className = "mt-4 p-4 rounded-lg text-xs leading-relaxed bg-blue-50 border border-blue-200 text-blue-950";
+                expDiv.innerHTML = "<strong>Format B (Matriks Kolumnar):</strong> Membagi pos pendapatan dan beban secara horisontal ke dalam kolom <em>Tanpa Pembatasan</em>, <em>Dengan Pembatasan</em>, dan <em>Jumlah</em> untuk periode berjalan.";
+            }
+        }
+
+        // Cash Flow Method Switcher
+        function setCashFlowMethod(method) {
+            currentCashFlowMethod = method;
+            updateCashFlowMethodUI();
+        }
+
+        function updateCashFlowMethodUI() {
+            const btnDirect = document.getElementById('btn-cf-direct');
+            const btnIndirect = document.getElementById('btn-cf-indirect');
+            const viewDirect = document.getElementById('view-cf-direct');
+            const viewIndirect = document.getElementById('view-cf-indirect');
+            const expDiv = document.getElementById('cf-explanation');
+
+            if (currentCashFlowMethod === 'direct') {
+                btnDirect.className = "px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950";
+                btnIndirect.className = "px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                viewDirect.classList.remove('hidden');
+                viewIndirect.classList.add('hidden');
+                expDiv.className = "mt-4 p-4 rounded-lg text-xs leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-950";
+                expDiv.innerHTML = "<strong>Metode Langsung (Direct):</strong> Melaporkan kelompok utama penerimaan kas kotor dan pengeluaran kas kotor dari aktivitas operasional. Memberikan gambaran penerimaan kas riil dari penderma dan pelanggan.";
+            } else {
+                btnIndirect.className = "px-4 py-2 rounded-md text-xs font-bold transition shadow bg-amber-500 text-slate-950";
+                btnDirect.className = "px-4 py-2 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                viewIndirect.classList.remove('hidden');
+                viewDirect.classList.add('hidden');
+                expDiv.className = "mt-4 p-4 rounded-lg text-xs leading-relaxed bg-blue-50 border border-blue-200 text-blue-950";
+                expDiv.innerHTML = "<strong>Metode Tidak Langsung (Indirect):</strong> Merekonsiliasi angka Surplus/Defisit bersih menjadi arus kas operasi dengan menyesuaikan dampak transaksi non-kas (seperti depresiasi) dan perubahan modal kerja.";
+            }
+        }
+
+        // Interactive Reklasifikasi Simulator
+        let isSimExecuted = false;
+        function triggerReklasifikasiSim() {
+            const restrictedVal = document.getElementById('sim-restricted-val');
+            const unrestrictedVal = document.getElementById('sim-unrestricted-val');
+            const statusText = document.getElementById('sim-status-text');
+
+            if (!isSimExecuted) {
+                restrictedVal.textContent = "Rp 1.100 Juta (-400)";
+                restrictedVal.className = "text-2xl font-mono font-bold text-red-400";
+                unrestrictedVal.textContent = "Rp 3.600 Juta (+400)";
+                unrestrictedVal.className = "text-2xl font-mono font-bold text-emerald-400";
+                statusText.textContent = "Berhasil Diberlakukan (Catatan C)";
+                statusText.className = "font-bold text-emerald-400";
+                isSimExecuted = true;
+            } else {
+                restrictedVal.textContent = "Rp 1.500 Juta";
+                restrictedVal.className = "text-2xl font-mono font-bold text-white";
+                unrestrictedVal.textContent = "Rp 3.200 Juta";
+                unrestrictedVal.className = "text-2xl font-mono font-bold text-white";
+                statusText.textContent = "Direset ke Saldo Awal";
+                statusText.className = "font-bold text-amber-300";
+                isSimExecuted = false;
+            }
+        }
+
+        // Endowment Simulator Calculation & Chart Update
+        function calculateEndowmentSim() {
+            const baseVal = parseFloat(document.getElementById('sim-endow-base').value) || 0;
+            const rateVal = parseFloat(document.getElementById('sim-endow-rate').value) || 0;
+            const returnVal = parseFloat(document.getElementById('sim-endow-return').value) || 0;
+
+            document.getElementById('lbl-sim-rate').textContent = `${rateVal}%`;
+
+            const withdrawAmt = baseVal * (rateVal / 100);
+            const growthAmt = baseVal * (returnVal / 100);
+            const netBalance = baseVal + growthAmt - withdrawAmt;
+
+            document.getElementById('res-sim-withdraw').textContent = `Rp ${withdrawAmt.toLocaleString('id-ID')} Juta`;
+            document.getElementById('res-sim-growth').textContent = `Rp ${growthAmt.toLocaleString('id-ID')} Juta`;
+            document.getElementById('res-sim-netbalance').textContent = `Rp ${netBalance.toLocaleString('id-ID')} Juta`;
+
+            updateSimEndowChart(baseVal, withdrawAmt, growthAmt, netBalance);
+        }
+
+        // Initialize Chart.js Elements
+        function initCharts() {
+            // Chart 1: Concept Net Asset Breakdown (Donut)
+            const ctxConcept = document.getElementById('chartConceptNetAssets').getContext('2d');
+            chartInstances['chartConcept'] = new Chart(ctxConcept, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tanpa Pembatasan', 'Terikat Program A/B/C', 'Terikat Periode Waktu', 'Dana Abadi (Endowment)'],
+                    datasets: [{
+                        data: [55, 20, 10, 15],
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#6366f1']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Chart 2: Note B Restricted Net Assets (Pie)
+            const ctxB = document.getElementById('chartNoteB').getContext('2d');
+            chartInstances['chartNoteB'] = new Chart(ctxB, {
+                type: 'pie',
+                data: {
+                    labels: ['Program A (Riset & Alat)', 'Program B (Perbaikan)', 'Program C (Gedung)', 'Periode Mendatang', 'Dana Abadi & Asuransi'],
+                    datasets: [{
+                        data: [30, 20, 25, 15, 10],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Chart 3: Note C Released Restrictions (Bar)
+            const ctxC = document.getElementById('chartNoteC').getContext('2d');
+            chartInstances['chartNoteC'] = new Chart(ctxC, {
+                type: 'bar',
+                data: {
+                    labels: ['Beban Prog A', 'Beban Prog B', 'Beban Prog C', 'Peralatan', 'Endowment'],
+                    datasets: [{
+                        label: 'Nilai Dibebaskan (Rp Jt)',
+                        data: [120, 95, 140, 80, 50],
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Chart 4: Note E Functional Expenses (Stacked Bar)
+            const ctxE = document.getElementById('chartNoteE').getContext('2d');
+            chartInstances['chartNoteE'] = new Chart(ctxE, {
+                type: 'bar',
+                data: {
+                    labels: ['Program A', 'Program B', 'Program C', 'Manajemen', 'Pendanaan'],
+                    datasets: [
+                        { label: 'Gaji & Upah', data: [200, 150, 180, 120, 60], backgroundColor: '#1e293b' },
+                        { label: 'Jasa Profesional', data: [50, 40, 60, 80, 30], backgroundColor: '#3b82f6' },
+                        { label: 'Depresiasi & Lain', data: [30, 25, 35, 45, 15], backgroundColor: '#f59e0b' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // Update Simulator Chart
+        function updateSimEndowChart(base, withdraw, growth, net) {
+            const ctxSim = document.getElementById('chartSimEndowment').getContext('2d');
+            if (chartInstances['chartSim']) {
+                chartInstances['chartSim'].destroy();
+            }
+
+            chartInstances['chartSim'] = new Chart(ctxSim, {
+                type: 'bar',
+                data: {
+                    labels: ['Dana Awal', 'Hasil Investasi (+)', 'Penarikan Y% (-)', 'Proyeksi Saldo Akhir'],
+                    datasets: [{
+                        label: 'Nilai (Rp Jutaan)',
+                        data: [base, growth, withdraw, net],
+                        backgroundColor: ['#64748b', '#10b981', '#ef4444', '#f59e0b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
